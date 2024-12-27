@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Trends</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+        }
+        a {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+        ul {
+            list-style-type: disc;
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .json-output {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>Twitter Trends</h1>
+    <a href="javascript:void(0);" onclick="runScript()">Click here to run the script</a>
+    <div id="results" style="display: none;">
+        <h2>These are the most happening topics as on <span id="timestamp">[Date and Time]</span></h2>
+        <ul id="trends-list"></ul>
+        <p>The IP address used for this query was <span id="proxy-ip">XXX.XXX.XXX.XXX</span>.</p>
+        <h3>Here’s a JSON extract of this record from the MongoDB:</h3>
+        <div id="json-output" class="json-output">Fetching data...</div>
+        <a href="javascript:void(0);" onclick="runScript()">Click here to run the query again.</a>
+    </div>
+
+    <script>
+        async function runScript() {
+            try {
+                const scriptResponse = await fetch('/run-script');
+                const scriptResult = await scriptResponse.json();
+
+                if (scriptResult.message) {
+                    alert(scriptResult.message);
+                } else if (scriptResult.error) {
+                    alert(`Error: ${scriptResult.error}`);
+                }
+            } catch (error) {
+                alert('Error running script. Please try again.');
+                console.error(error);
+                return;
+            }
+
+            await getTrends();
+        }
+
+        async function getTrends() {
+            try {
+                const response = await fetch('/get-trends');
+                const data = await response.json();
+
+                const resultsSection = document.getElementById('results');
+                resultsSection.style.display = 'block';
+
+                const trendsList = document.getElementById('trends-list');
+                trendsList.innerHTML = '';
+
+                const trends = [
+                    data.nameoftrend1,
+                    data.nameoftrend2,
+                    data.nameoftrend3,
+                    data.nameoftrend4,
+                    data.nameoftrend5
+                ];
+
+                const filteredTrends = trends.filter(trend => trend && trend.toLowerCase() !== "what’s happening");
+
+                if (filteredTrends.length === 0) {
+                    trendsList.innerHTML = '<li>No trends available</li>';
+                } else {
+                    filteredTrends.forEach(trend => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = trend;
+                        trendsList.appendChild(listItem);
+                    });
+                }
+
+                document.getElementById('timestamp').textContent = data.timestamp || "N/A";
+                document.getElementById('proxy-ip').textContent = data.proxy_ip || "N/A";
+                document.getElementById('json-output').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                alert('Error fetching trends. Please try again.');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
