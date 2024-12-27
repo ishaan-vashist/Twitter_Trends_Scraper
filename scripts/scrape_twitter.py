@@ -10,6 +10,11 @@ from pymongo import MongoClient
 from datetime import datetime
 import uuid
 import re
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 def scrape_trending_topics():
     """
@@ -18,6 +23,13 @@ def scrape_trending_topics():
     Returns:
         dict: Contains scraped trends, timestamp, and proxy IP.
     """
+    # Fetch environment variables
+    MONGO_URI = os.getenv('MONGO_URI')
+    TWITTER_USERNAME = os.getenv('TWITTER_USERNAME')
+    TWITTER_PASSWORD = os.getenv('TWITTER_PASSWORD')
+
+    if not MONGO_URI or not TWITTER_USERNAME or not TWITTER_PASSWORD:
+        raise ValueError("Missing required environment variables. Ensure MONGO_URI, TWITTER_USERNAME, and TWITTER_PASSWORD are set.")
 
     # Set up WebDriver options
     chrome_options = Options()
@@ -40,14 +52,14 @@ def scrape_trending_topics():
         username_field = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.NAME, "text"))
         )
-        username_field.send_keys("ishaan91812717")
+        username_field.send_keys(TWITTER_USERNAME)
         username_field.send_keys(Keys.RETURN)
 
         print("Entering password...")
         password_field = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.NAME, "password"))
         )
-        password_field.send_keys("Ishaan@1221")
+        password_field.send_keys(TWITTER_PASSWORD)
         password_field.send_keys(Keys.RETURN)
 
         # Wait for the trending section
@@ -68,7 +80,7 @@ def scrape_trending_topics():
         # Filter and clean trends
         lines = raw_content.split("\n")
         trends = [
-            line for line in lines
+            line.strip() for line in lines
             if not re.search(r"(what's happening|trending|\d+k posts|posts)", line, re.IGNORECASE)
         ]
         trends = list(dict.fromkeys(trends))[:5]  # Remove duplicates and limit to top 5
@@ -96,7 +108,7 @@ def scrape_trending_topics():
         # Save trends to MongoDB
         print("Connecting to MongoDB...")
         try:
-            client = MongoClient('mongodb+srv://ivashist:mrllwT72sMg8tJFd@cluster0.npu82.mongodb.net/')
+            client = MongoClient(MONGO_URI)
             db = client.twitter_trends
             collection = db.trending
 
@@ -128,4 +140,3 @@ if __name__ == "__main__":
         print("Scraping completed successfully:", result)
     else:
         print("No data scraped.")
-    
